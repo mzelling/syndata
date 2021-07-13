@@ -67,7 +67,7 @@ class ClusterData:
 			np.savetxt(filename, self.data, delimiter=',')
 		
 		
-	def generate_data(self):
+	def generate_data(self,sparse=False, noise_factor=1.0, mode='sparse'):
 		"""
 		Generates a data set with clusters according to a ClusterData object.
 		
@@ -75,6 +75,13 @@ class ClusterData:
 		----------
 		self : ClusterData
 			Defines how data is generated
+		sparse : bool
+			Decide whether to add noise covariates to the data
+		noise_factor : float
+			Determines the number of noise covariates added, if sparse=True 
+		mode : str
+			Determines the meaning of noise_factor
+
 
 		Returns
 		-------
@@ -100,7 +107,41 @@ class ClusterData:
 
 		print('Success!')
 
+		if sparse:
+			self.data = ClusterData.add_noise(self.data,noise_factor=noise_factor,mode=mode)
+
 		return (self.data, self.labels)
+
+
+	def add_noise(X, noise_factor, mode='sparse'):
+		"""
+		Add noise covariates to data set.
+
+		If mode='sparse', noise_factor is the ratio between the number
+		of noise covariates vs meaningful covariates. If mode='dim',
+		noise_factor is the ratio between the total number of covariates
+		and the number of samples, i.e. a high noise_factor indicates
+		high-dimensional data in the statistical sense (more covariates 
+		than samples).
+
+		"""
+
+		n_dim = X.shape[1] 
+		n_samples = X.shape[0]
+
+		if (mode == 'sparse'):
+			n_noise_cov = int(np.ceil(n_dim * noise_factor))
+			noise_cov = np.random.choice(a=X.reshape((X.size,)), size=(n_samples,n_noise_cov))
+			return np.concatenate([X,noise_cov],axis=1)
+		elif (mode == 'dim'):
+			n_cov = int(np.ceil(n_samples * noise_factor))
+			n_noise_cov = n_cov - n_dim
+			if (n_noise_cov <= 0):
+				print("Given data is already more high-dimensional than desired! No changes were made.")
+				return X
+			else:
+				noise_cov = np.random.choice(a=X.reshape((X.size,)), size=(n_samples,n_noise_cov))
+				return np.concatenate([X,noise_cov],axis=1)
 
 
 
