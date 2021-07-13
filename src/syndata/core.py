@@ -48,6 +48,7 @@ class ClusterData:
 		self.center_geom = center_geom
 		self.data_dist = data_dist
 		self.data = None
+		self.labels = None
 		self.centers = None
 		self.class_sizes = None
 		self.cov = None
@@ -95,11 +96,11 @@ class ClusterData:
 		self.centers = self.center_geom.place_centers(self)
 
 		print('Sample data...')
-		self.data = self.data_dist.sample(self)
+		self.data, self.labels = self.data_dist.sample(self)
 
 		print('Success!')
 
-		return self.data
+		return (self.data, self.labels)
 
 
 
@@ -167,8 +168,34 @@ class DataDist:
 	Defines data probability distribution for ClusterData.
 	"""
 
-	def __init__(self, clusterdata):
+	def __init__(self):
 		pass
 
-	def sample(self):
+	def sample(self, clusterdata):
+		n_clusters = clusterdata.n_clusters
+		n_samples = clusterdata.n_samples
+		n_dim = clusterdata.n_dim
+		class_sizes = clusterdata.class_sizes
+		centers = clusterdata.centers
+
+		axes = clusterdata.cluster_axes
+		sd = clusterdata.cluster_sd
+
+		X = np.full(shape=(n_samples, n_dim), fill_value=np.nan)
+		y = np.full(n_samples, fill_value=np.nan).astype(int)
+
+		start = 0
+		for i in range(n_clusters):
+			end = start + class_sizes[i]
+			# Set class label
+			y[start:end] = i
+			# Sample data
+			X[start:end,:] = self.sample_cluster(cluster_size=class_sizes[i], 
+										  mean=centers[i], axes=axes[i],
+										  sd=sd[i])
+			start = end
+
+		return (X, y)
+
+	def sample_cluster(self,cluster_size, mean,axes,sd):
 		pass

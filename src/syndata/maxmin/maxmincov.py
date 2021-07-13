@@ -121,7 +121,7 @@ class MaxMinCov(CovGeom):
 
 		Returns
 		-------
-		out : a tuple (axis, sd), where cov and cov_inv are lists of ndarrays
+		out : a tuple (axis, sd, cov, cov_inv), where cov and cov_inv are lists of ndarrays
 			The lists cov and cov_inv contain the covariance and inverse covariance
 			matrices for each cluster. Corresponding list indices refer to the same
 			cluster. Alternatively, if output_inv=False then only the list cov is
@@ -147,6 +147,8 @@ class MaxMinCov(CovGeom):
 
 			axis.append(axes)
 			sd.append(axis_sd)
+
+			# can potentially not construct cov, cov_inv here; and instead do it only upon request
 			cov.append(np.transpose(axes) @ np.diag(axis_sd**2) @ axes)
 			cov_inv.append(np.transpose(axes) @ np.diag(1/axis_sd**2) @ axes)
 

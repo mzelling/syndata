@@ -63,6 +63,11 @@ class BoundedSepCenters(CenterGeom):
 
 		# compute reference chi square value (take 0.95 quantile)
 		chi_sq_ref = chi2.ppf(0.95, df=n_dim)
+
+		# what's the reference distribution for the sum of squared scaled exponentials?
+		# compute 0.95 quantile of distribution of the sum of n_dim Exp(1)**2 random variables
+
+		# sum of squared scaled standard t distributions?
 		
 		for new_center in range(n_clusters):
 			accept = False
