@@ -1,3 +1,38 @@
+"""
+This module provides the core object-oriented framework for generating 
+synthetic data sets with clusters. The classes contained here are mainly 
+abstract superclasses. They require subclasses to concretely implement 
+much of the specified functionality.
+
+CLASSES AND METHODS
+
+	ClusterData: top-level object for generating data
+		__init__(self, n_clusters, n_dim, n_samples, class_bal, cov_geom, 
+				 center_geom, data_dist, ...)
+		to_csv(self, filename)
+		generate_data(self, ...)
+		add_noise(self, data, snr, p_over_n, ...)
+
+	CovGeom: sample cluster shapes
+		__init__(self)
+		make_cov(self, clusterdata)
+		make_orthonormal_axes(self, n_dim, n_axes)
+
+	CenterGeom: place cluster centers
+		__init__(self)
+		make_centers(self, clusterdata)
+
+	ClassBal: sample number of points for each cluster
+		__init__(self)
+		make_class_sizes(self, clusterdata)
+
+	DataDist: draw synthetic data for each cluster
+		__init__(self)
+		sample(self, clusterdata)
+		sample_cluster(self, cluster_size, mean, axes, sd)
+"""
+
+
 import numpy as np
 import scipy.stats as stats
 
@@ -11,7 +46,7 @@ class ClusterData:
 		Number of clusters
 	n_dim : int
 		Dimensionality of data points
-	n_sample : int
+	n_samples : int
 		Total number of data points 
 	class_bal : ClassBal object
 		Defines relative class sizes (samples sizes for each cluster)
@@ -26,12 +61,15 @@ class ClusterData:
 
 	Attributes
 	----------
-	class_sizes
-	cluster_axes
-	cluster_sd
-	cov
-	cov_inv
-	data
+	centers : 
+	class_sizes : 
+	cluster_axes :
+	cluster_sd :
+	cov : 
+	cov_inv :
+	data :
+	labels :
+	scale :
 
 	"""
 		
@@ -62,32 +100,37 @@ class ClusterData:
 		Writes data to a csv file.
 		"""
 		if (self.data is None):
-			print('Error: No data has been generated. Call ClusterData.generate_data to generate data.')
+			raise Exception('No data has been generated. Use ClusterData.generate_data to generate data.')
 		else:
 			np.savetxt(filename, self.data, delimiter=',')
 		
 		
-	def generate_data(self,sparse=False, noise_factor=1.0, mode='sparse'):
+	def generate_data(self,add_noise_vars=False, snr=None, p_over_n=None):
 		"""
-		Generates a data set with clusters according to a ClusterData object.
+		Generates a dataset with clusters according to a ClusterData object.
 		
 		Parameters
 		----------
 		self : ClusterData
-			Defines how data is generated
-		sparse : bool
-			Decide whether to add noise covariates to the data
-		noise_factor : float
-			Determines the number of noise covariates added, if sparse=True 
-		mode : str
-			Determines the meaning of noise_factor
-
+			The underlying data generator
+		add_noise_vars : bool
+			If true, add noise features to the data. Need to set snr and/or
+			p_over_n to control the amount of noise added. If both snr and
+			p_over_n are given, add the least number of noise features that
+			meets or exceeds both thresholds (snr and the p_over_n).
+		snr : float
+			Set the ratio between the number of meaningful features and the
+			number of noise features. Only relevant when add_noise_vars=True.
+		p_over_n : float
+			Set the ratio between the total number of features (p) and the
+			number of samples (n). Only relevant when add_noise_vars=True.
 
 		Returns
 		-------
-		X : (self.n_samples, 1+self.n_dim) ndarray
-			Data matrix whose rows are the data points. The last column stores the 
-			cluster labels as integers from 0 to self.n_clusters.
+		X : ndarray
+			Data matrix whose rows are the data points.
+		y : ndarray
+			Vector of cluster labels.
 		"""
 		print('Compute class sizes...')
 		self.class_sizes = self.class_bal.make_class_sizes(self)
@@ -107,42 +150,82 @@ class ClusterData:
 
 		print('Success!')
 
-		if sparse:
-			self.data = ClusterData.add_noise(self.data,noise_factor=noise_factor,mode=mode)
+		if add_noise_vars:
+			self.data = self.add_noise(self.data,snr=snr,p_over_n=p_over_n)
 
 		return (self.data, self.labels)
 
 
-	def add_noise(X, noise_factor, mode='sparse'):
+	def add_noise(self, data, snr, p_over_n, model='unif', margin=0.1, 
+		print_warning=True):
 		"""
-		Add noise covariates to data set.
+		Add noise features to given data.
 
-		If mode='sparse', noise_factor is the ratio between the number
-		of noise covariates vs meaningful covariates. If mode='dim',
-		noise_factor is the ratio between the total number of covariates
-		and the number of samples, i.e. a high noise_factor indicates
-		high-dimensional data in the statistical sense (more covariates 
-		than samples).
+		Choosing snr determines how "sparse" the resulting data is, whereas 
+		p_over_n determines how high-dimensional the data is. If only one of snr
+		and p_over_n is given, add the exact number of noise features required 
+		to meet the threshold. If both snr and p_over_n are given, add the least 
+		number of noise features that meets or exceeds both thresholds. Thus, the 
+		resulting data is as noisy or noisier than required by either threshold.
+
+		Parameters
+		----------
+		self : ClusterData
+			The underlying data generator
+		data :
+			The data to which noise features are added.
+		snr : float
+			Set the ratio between the number of meaningful features and the
+			number of noise features.
+		p_over_n : float
+			Set the ratio between the total number of features (p) and the
+			number of samples (n).
+		model : str
+			Determine how noise features are calculated.
+
+		Returns
+		-------
+		out : ndarray
+			Input data with added noise features.
 
 		"""
 
-		n_dim = X.shape[1] 
-		n_samples = X.shape[0]
+		n_dim = data.shape[1] 
+		n_samples = data.shape[0]
 
-		if (mode == 'sparse'):
-			n_noise_cov = int(np.ceil(n_dim * noise_factor))
-			noise_cov = np.random.choice(a=X.reshape((X.size,)), size=(n_samples,n_noise_cov))
-			return np.concatenate([X,noise_cov],axis=1)
-		elif (mode == 'dim'):
-			n_cov = int(np.ceil(n_samples * noise_factor))
-			n_noise_cov = n_cov - n_dim
-			if (n_noise_cov <= 0):
-				print("Given data is already more high-dimensional than desired! No changes were made.")
-				return X
-			else:
-				noise_cov = np.random.choice(a=X.reshape((X.size,)), size=(n_samples,n_noise_cov))
-				return np.concatenate([X,noise_cov],axis=1)
+		# get lower and upper feature limits
+		low = np.min(data,axis=0)
+		high = np.max(data,axis=0)
 
+		if (not snr) and (not p_over_n):
+			raise Exception('Must provide either snr or p_over_n to determine ' +
+							'number of noise features to add.')
+		else:
+			if snr and not p_over_n:
+				# add enough noise features to meet snr threshold
+				n_noise_vars = int(np.ceil(n_dim / snr))
+				noise_vars = np.random.uniform((1-margin)*low,(1+margin)*high,
+											  size=(n_samples,n_noise_vars))
+			if p_over_n and not snr:
+				# add enough noise features to meet p_over_n threshold
+				if n_dim/n_samples <= p_over_n:
+					n_noise_vars = int(np.ceil(p_over_n * n_samples)) - n_dim
+					noise_vars = np.random.uniform((1-margin)*low,(1+margin)*high,
+											  		 size=(n_samples,n_noise_vars))
+				else:
+					noise_vars = []
+					if print_warning:
+						print('Warning: data already sufficiently high-dimensional,' +
+						  	  ' no noise features added.')
+			if snr and p_over_n:
+				# add enough noise features to meet both snr and p_over_n thresholds
+				n_noise_vars = np.max([int(np.ceil(n_dim/snr)), 
+									   int(np.ceil(n_samples*p_over_n))-n_dim])
+				noise_vars = np.random.uniform((1-margin)*low,(1+margin)*high,
+											   size=(n_samples,n_noise_vars))
+
+			# return data with noise features added
+			return np.concatenate([data,noise_vars],axis=1)
 
 
 class CovGeom:
@@ -150,11 +233,19 @@ class CovGeom:
 	Specifies the covariance structure for ClusterData.
 	"""
 	
-	def __init__(self, clusterdata):
-		pass
+	def __init__(self):
+		raise NotImplementedError('Cannot instantiate abstract CovGeom.'+
+								  ' Choose a provided implementation,'+
+								  ' e.g. maxmin.MaxMinCov, or code your'+
+								  ' own algorithm for defining cluster'+
+								  ' covariance structure.')
 
-	def make_cov(self):
-		pass
+	def make_cov(self, clusterdata):
+		raise NotImplementedError('Cannot sample covariance structure from'+
+								  ' abstract CovGeom. Choose a provided' 
+								  ' implementation, e.g. maxmin.MaxMinCov' +
+								  ', or code your own algorithm for defining'
+								  ' cluster covariance structure.')
 
 	def make_orthonormal_axes(self, n_dim, n_axes):
 		"""
@@ -183,11 +274,17 @@ class CenterGeom:
 	Defines placement of cluster centers for ClusterData.
 	"""
 
-	def __init__(self, clusterdata):
-		pass
+	def __init__(self):
+		raise NotImplementedError('Cannot instantiate abstract CenterGeom.'+
+								  ' Choose a provided implementation,'+
+								  ' e.g. centers.BoundedSepCenters, or code your'+
+								  ' own algorithm for placing cluster centers.')
 
-	def make_centers(self):
-		pass
+	def make_centers(self, clusterdata):
+		raise NotImplementedError('Cannot sample cluster centers from abstract'+
+								  ' CenterGeom. Choose a provided implementation,'+
+								  ' e.g. centers.BoundedSepCenters, or code your'+
+								  ' own algorithm for placing cluster centers.')
 
 
 
@@ -197,11 +294,16 @@ class ClassBal:
 	"""
 
 	def __init__(self):
-		pass
+		raise NotImplementedError('Cannot instantiate abstract ClassBal.' + 
+								  ' Choose a provided implementation, e.g.'+
+								  'maxmin.MaxMinBal, or code your own '+
+								  'algorithm for sampling class sizes.')
 
 	def make_class_sizes(self, clusterdata):
-		pass
-
+		raise NotImplementedError('Cannot sample class sizes from abstract'+
+								  ' ClassBal. Choose a provided implementation,'+
+								  ' e.g. maxmin.MaxMinBal, or code your own '+
+								  'algorithm for sampling class sizes.')
 
 
 class DataDist:
@@ -210,7 +312,9 @@ class DataDist:
 	"""
 
 	def __init__(self):
-		pass
+		raise NotImplementedError('Cannot instantiate abstract DataDist. Choose '+
+								  ' a provided implementation, e.g. GaussianDist,' +
+								  ' or code your own data distribution.')
 
 	def sample(self, clusterdata):
 		n_clusters = clusterdata.n_clusters
@@ -238,5 +342,7 @@ class DataDist:
 
 		return (X, y)
 
-	def sample_cluster(self,cluster_size, mean,axes,sd):
-		pass
+	def sample_cluster(self, cluster_size, mean, axes, sd):
+		raise NotImplementedError('Cannot sample cluster from abstract DataDist. '+
+								  'Choose a provided implementation, e.g. '
+								  'GaussianDist, or code your own data distribution.')

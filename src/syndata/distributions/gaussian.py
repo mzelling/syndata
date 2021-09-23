@@ -12,7 +12,7 @@ class GaussianData(DataDist):
 		"""
 		pass
 
-	def sample_cluster(self,cluster_size, mean,axes,sd):
+	def sample_cluster(self,cluster_size,mean,axes,sd):
 		"""
 		"""
 		cov = np.transpose(axes) @ np.diag(sd**2) @ axes
