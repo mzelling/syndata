@@ -1,1 +1,1 @@
-from .maxmin.maxminclusters import MaxMinClusters
+from .maxmin import MaxMinClusters

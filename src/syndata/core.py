@@ -31,8 +31,6 @@ CLASSES AND METHODS
 		sample(self, clusterdata)
 		sample_cluster(self, cluster_size, mean, axes, sd)
 """
-
-
 import numpy as np
 import scipy.stats as stats
 
