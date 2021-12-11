@@ -201,6 +201,19 @@ def test_make_cluster_radii(setup_maxmincov):
 		cluster_radii_prev = cluster_radii_new
 
 
+	def test_make_axis_sd():
+		"""
+		Make sure valid standard deviations are sampled (>0).
+
+		Ensure sure ref_sd is between min and max, and that the maxmin ratio
+		equals the desired aspect ratio.
+		"""
+
+	def test_make_cov():
+		"""
+		"""
+
+
 # Test Cases for MaxMinBal
 
 # Test Cases for MaxMinClusters

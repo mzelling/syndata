@@ -208,9 +208,12 @@ class MaxMinCov(CovGeom):
 			Desired ratio between maximum and minimum cluster radius.
 
 		"""
-		self.ref_aspect = ref_aspect
-		self.aspect_maxmin = aspect_maxmin
-		self.radius_maxmin = radius_maxmin
+		if (np.min([ref_aspect,aspect_maxmin,radius_maxmin]) < 1):
+			raise ValueError('aspect ratio and maxmin ratios must be >=1')
+		else:
+			self.ref_aspect = ref_aspect
+			self.aspect_maxmin = aspect_maxmin
+			self.radius_maxmin = radius_maxmin
 	
 
 	def make_cluster_aspects(self, n_clusters,seed=None):
@@ -231,10 +234,22 @@ class MaxMinCov(CovGeom):
 			The aspect ratios for each cluster.
 		"""
 
+		n_clusters = self.check_n_clusters(n_clusters)
+
 		min_aspect = 1 + (self.ref_aspect-1)/np.sqrt(self.aspect_maxmin)
 		f = lambda a: ((self.ref_aspect-1)**2)/a
 		return 1+maxmin_sampler(n_clusters, self.ref_aspect-1, min_aspect-1, self.aspect_maxmin, f,
 								seed=seed)
+
+
+	def check_n_clusters(self, n_clusters):
+		"""
+		Make sure the input number of clusters is valid.
+		"""
+		if (n_clusters < 1):
+			raise ValueError('number of clusters must be >=1')
+		else:
+			return int(n_clusters)
 
 		
 	def make_cluster_radii(self, n_clusters, ref_radius, n_dim, seed=None):
@@ -263,6 +278,8 @@ class MaxMinCov(CovGeom):
 		out : ndarray
 			Cluster radii
 		"""
+		n_clusters = self.check_n_clusters(n_clusters)
+
 		log_min_radius = np.log(ref_radius) - (1/2)*np.log(self.radius_maxmin)
 		f = lambda log_r: 2*np.log(ref_radius) - log_r
 
@@ -485,12 +502,15 @@ class MaxMinBal(ClassBal):
 		return class_sz
 
 
-def maxmin_sampler(n_samples, ref, min_val, maxmin_ratio, f_constrain, seed=None):
+def maxmin_sampler(n_samples, ref, min_val, maxmin_ratio, 
+					f_constrain, seed=None):
 	"""
 	Generates samples around a reference value, with a fixed ratio between the 
 	maximum and minimum sample. Sample pairwise to enforce a further constraint 
 	on the samples. For example, the geometric mean of the samples can be 
 	specified.
+
+	The reference and minimum values must be positive.
 
 	Parameters
 	----------
@@ -503,6 +523,7 @@ def maxmin_sampler(n_samples, ref, min_val, maxmin_ratio, f_constrain, seed=None
 	Returns
 	-------
 	out : ndarray
+		Sorted array of sampled values
 
 	"""
 	np.random.seed(seed)
@@ -530,6 +551,7 @@ def maxmin_sampler(n_samples, ref, min_val, maxmin_ratio, f_constrain, seed=None
 		out = np.array([min_val, max_val])
 	elif (n_samples == 1):
 		out = np.array([ref])
+	elif (n_samples == 0):
+		raise ValueError('number of samples must be greater than 0')
 
-	permuted_out = out[np.random.permutation(out.size)]
-	return permuted_out
+	return np.sort(out)

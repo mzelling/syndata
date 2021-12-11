@@ -231,7 +231,10 @@ class ClusterData:
 					plt.gca().fill(Z[0]+x_c,Z[1]+y_c,c='b',alpha=alpha_max*np.exp(-np.sqrt(r)),edgecolor=None)
 			elif mode=='arrows':
 				# plot cluster center, a single elliptical contour, and arrows along the principal axes
-				pass
+				raise NotImplementedError('the ability to plot arrows along the principal axes is coming soon')
+
+			print('hello dair')
+		return (plt.gcf(), plt.gca())
 		
 		
 	def generate_data(self,add_noise_vars=False, snr=None, p_over_n=None,seed=None,verbose=True):
