@@ -430,6 +430,8 @@ class MaxMinBal(ClassBal):
 		out : MaxMinBal
 			MaxMinBal object for sampling class sizes
 		"""
+		if (imbal_ratio < 1):
+			raise ValueError('Imbalance ratio must be >=1')
 
 		self.imbal_ratio = imbal_ratio
 
@@ -453,15 +455,27 @@ class MaxMinBal(ClassBal):
 		out : ndarray, dtype=int
 			Class sizes (number of data points in each cluster)
 		"""
+		if len(float_class_sz) > n_samples:
+			raise ValueError('Number of clusters must not exceed number of samples' + ' ' + str(len(float_class_sz)) + \
+								str(n_samples))
+		elif np.any(float_class_sz <= 0):
+			raise ValueError('Approximate float class sizes must be >0')
+		elif n_samples == 0:
+			raise ValueError('Number of samples must be >=1')
+
 		# round float class sizes and add 1, then sort
-		class_sz = 1 + np.sort(np.round(float_class_sz))
-		# start by shrinking the highest class sizes
+		class_sz = np.max([1, int(n_samples - np.sum(float_class_sz))]) + \
+					np.sort(np.round(float_class_sz))
+		# start by shrinking the highest class sizes, then circulate through array
 		class2shrink_idx = len(class_sz) - 1
 		while (np.sum(class_sz) > n_samples):
 			if (class_sz[class2shrink_idx] > 1):
 				class_sz[class2shrink_idx] -= 1
 				class2shrink_idx -= 1
 			else:
+				class2shrink_idx -= 1
+			# start from the beginning again if we are at zero-th element
+			if (class2shrink_idx == -1):
 				class2shrink_idx = len(class_sz) - 1
 		return class_sz.astype(int)
 
@@ -487,6 +501,12 @@ class MaxMinBal(ClassBal):
 		"""
 		n_samples = clusterdata.n_samples
 		n_clusters = clusterdata.n_clusters
+
+		if not isinstance(n_samples,int) or not isinstance(n_samples,int) \
+			or (n_samples <= 0) or (n_clusters <= 0):
+			raise ValueError('Number of samples and number of clusters must be positive integers')
+		elif n_clusters > n_samples:
+			raise ValueError('Number of clusters must not exceed number of samples')
 
 		# Set average class size as the reference size.
 		ref_class_sz = n_samples/n_clusters

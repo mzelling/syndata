@@ -94,7 +94,7 @@ def is_sorted(vals, order='ascending'):
 
 # Test Cases for MaxMinCov
 
-def test__init__():
+def test_init_maxmincov():
 	"""
 	Make sure that no illicit values can be used to construct MaxMinCov.
 	"""
@@ -219,6 +219,10 @@ def test_make_axis_sd(setup_maxmincov):
 	Z_appropriate = np.concatenate([interior_cases, edge_cases],axis=0)
 	args_appropriate = [{'n_axes': z[0], 'sd': z[1], 'aspect': z[2]} for z in Z_appropriate]
 
+	for args in args_appropriate:
+		out = maxmincov.make_axis_sd(**args)
+		assert (np.min(out) <= args['sd']) and (np.max(out) >= args['sd']) 
+
 	# test inappropriate inputs
 	with pytest.raises(ValueError):
 		maxmincov.make_axis_sd(n_axes=0, sd=1, aspect=2)
@@ -278,6 +282,79 @@ def test_make_cov(setup_maxmincov, setup_clusterdata):
 
 
 # Test Cases for MaxMinBal
+
+@pytest.fixture(params = np.linspace(1,10,10))
+def setup_maxminbal(request):
+	return MaxMinBal(request.param)
+
+
+def test_init_maxminbal(setup_maxminbal):
+	"""
+	Ensure imbalance ratio is properly specified.
+	"""
+	maxminbal = setup_maxminbal
+	assert maxminbal.imbal_ratio >= 1
+
+	# test input check for inappropriate arguments
+	with pytest.raises(ValueError):
+		MaxMinBal(imbal_ratio = 0.5)
+		MaxMinBal(imbal_ratio = -2)
+
+
+def test_make_class_sizes(setup_maxminbal,setup_clusterdata):
+	"""
+	"""
+	maxminbal = setup_maxminbal
+	clusterdata = setup_clusterdata
+
+	# test with appropriate input
+	Z_appropriate = [[500,5],[200,1],[100,2],[1000,10],[1500,3], [100,100]]
+	args_appropriate = [{'n_samples': z[0], 'n_clusters': z[1]} for z in Z_appropriate]
+	for args in args_appropriate:
+		clusterdata.n_samples = args['n_samples']
+		clusterdata.n_clusters = args['n_clusters']
+		out = maxminbal.make_class_sizes(clusterdata)
+		assert np.issubdtype(out.dtype, np.integer) and np.all(out >= 1) and \
+				(np.sum(out) == args['n_samples'])
+
+	# test with inappropriate input
+	Z_inappropriate = [[500,0],[0,10],[100,-1],[-0.5,5],[10,11]]
+	args_inappropriate = [{'n_samples': z[0], 'n_clusters': z[1]} for z in Z_inappropriate]
+	for args in args_inappropriate:
+		with pytest.raises(ValueError):
+			clusterdata.n_clusters = args['n_clusters']
+			clusterdata.n_samples = args['n_samples']
+			maxminbal.make_class_sizes(clusterdata)
+
+
+def test_float_to_int(setup_maxminbal):
+	"""
+	float_class_sz, n_samples
+	"""
+	maxminbal = setup_maxminbal
+
+	# test appropriate inputs
+	for float_class_sz, n_samples in [(np.array([23.2, 254.7, 0.1, 35.6]), 100), \
+									  (np.array([0.2, 0.7, 0.1, 0.5]), 10),
+									  (np.array([2.5,1.5,5.2]), 3),
+									  (np.array([0.5]), 1)]:
+		out = maxminbal.float_to_int(float_class_sz,n_samples)
+		print(len(float_class_sz), float_class_sz, n_samples)
+		assert (np.sum(out) == n_samples) and (np.all(out >= 1)) \
+				and np.issubdtype(out.dtype,np.integer)
+
+	# test inputs that should be left unchanged
+	assert np.all(maxminbal.float_to_int(np.array([5,10,25,7]), 5+10+25+7) \
+					== np.sort(np.array([5,10,25,7])))
+
+	# test inappropriate inputs
+	for float_class_sz, n_samples in [(np.array([0.5,1.5]), 1),
+									  (np.array([0.5,1.5]), 0),
+									  (np.array([2.5,1.5,5.2]), 2)]:
+		with pytest.raises(ValueError):
+			maxminbal.float_to_int(float_class_sz,n_samples)
+
+
 
 # Test Cases for MaxMinClusters
 
