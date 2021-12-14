@@ -236,9 +236,45 @@ def test_make_axis_sd(setup_maxmincov):
 		axis_sd_prev = axis_sd_new
 
 
-def test_make_cov():
+def test_make_cov(setup_maxmincov, setup_clusterdata):
 	"""
+	Make sure axes are orthogonal
+	Make sure cov = axis * sd**2 * axis', similar for cov_inv
 	"""
+	clusterdata = setup_clusterdata
+	maxmincov = setup_maxmincov
+
+	# ensure output makes mathematical sense
+	for i in range(10):
+		(axis, sd, cov, cov_inv) = maxmincov.make_cov(clusterdata)
+
+		for cluster_idx in range(clusterdata.n_clusters):
+			# test orthogonality of cluster axes
+			assert np.all(np.allclose(axis[cluster_idx] @ np.transpose(axis[cluster_idx]),
+					np.eye(axis[cluster_idx].shape[0])))
+
+			# test covariance matrix is correct
+			assert np.all(np.allclose(cov[cluster_idx],
+					np.transpose(axis[cluster_idx]) @ np.diag(sd[cluster_idx]**2) \
+						@ axis[cluster_idx]))
+
+			# test inverse covariance matrix is correct
+			assert np.all(np.allclose(cov_inv[cluster_idx], 
+					np.transpose(axis[cluster_idx]) @ np.diag(sd[cluster_idx]**(-2)) \
+						@ axis[cluster_idx]))
+
+
+	# test seed
+	seed = 123
+	for i in range(10):
+		cov_structure_new = maxmincov.make_cov(clusterdata, seed=seed)
+		if (i >= 1):
+			for cluster_idx in range(clusterdata.n_clusters):
+				for j in range(4): # iterate through axis, sd, cov, cov_inv
+					assert np.all(np.allclose(cov_structure_prev[j][cluster_idx],
+										  	  cov_structure_new[j][cluster_idx]))
+		# set previous covariance structure for next iteration:
+		cov_structure_prev = cov_structure_new
 
 
 # Test Cases for MaxMinBal
