@@ -201,17 +201,44 @@ def test_make_cluster_radii(setup_maxmincov):
 		cluster_radii_prev = cluster_radii_new
 
 
-	def test_make_axis_sd():
-		"""
-		Make sure valid standard deviations are sampled (>0).
+def test_make_axis_sd(setup_maxmincov):
+	"""
+	Make sure valid standard deviations are sampled (>0).
 
-		Ensure sure ref_sd is between min and max, and that the maxmin ratio
-		equals the desired aspect ratio.
-		"""
+	Ensure sure ref_sd is between min and max, and that the maxmin ratio
+	equals the desired aspect ratio.
+	"""
+	maxmincov = setup_maxmincov
 
-	def test_make_cov():
-		"""
-		"""
+	# test appropriate inputs
+	interior_cases = np.concatenate([np.arange(2,50+2)[:,np.newaxis], 
+								 	 np.random.uniform(0,10,size=50)[:,np.newaxis], 
+								 	 np.random.uniform(1,10,size=50)[:,np.newaxis]], 
+								 	axis=1)
+	edge_cases = np.array([[1,0.5,1.5], [1,0.5,1], [2,0.1,1]])
+	Z_appropriate = np.concatenate([interior_cases, edge_cases],axis=0)
+	args_appropriate = [{'n_axes': z[0], 'sd': z[1], 'aspect': z[2]} for z in Z_appropriate]
+
+	# test inappropriate inputs
+	with pytest.raises(ValueError):
+		maxmincov.make_axis_sd(n_axes=0, sd=1, aspect=2)
+		maxmincov.make_axis_sd(n_axes=0.5, sd=0, aspect=2)
+		maxmincov.make_axis_sd(n_axes=1, sd=1, aspect=0.5)
+		maxmincov.make_axis_sd(n_axes=2, sd=1, aspect=-2)
+		maxmincov.make_axis_sd(n_axes=2, sd=-1, aspect=2)
+
+	# test seed
+	seed = 123
+	for i in range(10):
+		axis_sd_new = maxmincov.make_axis_sd(n_axes=5,sd=4,aspect=25, seed=seed)
+		if (i >= 1):
+			assert np.all(axis_sd_new == axis_sd_prev)
+		axis_sd_prev = axis_sd_new
+
+
+def test_make_cov():
+	"""
+	"""
 
 
 # Test Cases for MaxMinBal

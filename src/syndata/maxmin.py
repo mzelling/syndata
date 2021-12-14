@@ -316,6 +316,13 @@ class MaxMinCov(CovGeom):
 			Standard deviations along principal axes of this cluster
 
 		"""
+		if (n_axes < 1) or (sd <= 0) or (aspect < 1):
+			raise ValueError('number of axes must be >=1, reference standard' +\
+								'deviation must be >0,' + \
+							 	'and aspect ratio must be >= 1')
+		else: 
+			n_axes = int(n_axes)
+
 		min_sd = sd/np.sqrt(aspect)
 		f = lambda s: (sd**2)/s
 		return maxmin_sampler(n_axes, sd, min_sd, aspect, f, seed=seed)
