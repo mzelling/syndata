@@ -358,6 +358,81 @@ def test_float_to_int(setup_maxminbal):
 
 # Test Cases for MaxMinClusters
 
+def test_init_maxminclusters():
+	"""
+	Make sure to throw an error when inappropriate arguments are given.
+	"""
+
+	# edge and interior test cases for n_clusters, n_samples, n_dim
+	MaxMinClusters(n_clusters=1,n_samples=1,n_dim=1)
+	MaxMinClusters(n_clusters=1,n_samples=1,n_dim=10)
+	MaxMinClusters(n_clusters=2,n_samples=100,n_dim=2)
+	MaxMinClusters(n_clusters=10,n_samples=200,n_dim=5)
+
+	# edge and interior test cases for testing maxmin ratios
+	MaxMinClusters(imbal_maxmin=1,aspect_maxmin=1,radius_maxmin=1, aspect_ref=1)
+	MaxMinClusters(imbal_maxmin=1,aspect_maxmin=1.1,radius_maxmin=1.1,aspect_ref=1.5)
+	MaxMinClusters(imbal_maxmin=1.2,aspect_maxmin=1,radius_maxmin=1.5,aspect_ref=7)
+	MaxMinClusters(imbal_maxmin=3,aspect_maxmin=2,radius_maxmin=1,aspect_ref=5)
+	MaxMinClusters(imbal_maxmin=3,aspect_maxmin=2,radius_maxmin=5,aspect_ref=1)
+	MaxMinClusters(imbal_maxmin=3,aspect_maxmin=2,radius_maxmin=5,aspect_ref=4)
+
+	# edge and interior test cases for overlap
+	MaxMinClusters(alpha_max=0.5, alpha_min=0.01)
+	MaxMinClusters(alpha_max=0.05, alpha_min=0)
+	MaxMinClusters(alpha_max=0.1, alpha_min=0.0001)
+
+	# testing the distributions
+	MaxMinClusters(dist='exp')
+	MaxMinClusters(dist='gaussian')
+	MaxMinClusters(dist='t')
+
+	# testing packing and scale
+	MaxMinClusters(packing=0.5)
+	MaxMinClusters(packing=0.01)
+	MaxMinClusters(packing=0.99)
+	MaxMinClusters(scale=0.01)
+	MaxMinClusters(scale=0.05)
+	MaxMinClusters(scale=5)
+	MaxMinClusters(scale=10)
+
+
+	with pytest.raises(ValueError):
+		# must have n_dim, n_clusters, n_samples >= 1
+		# and n_clusters <= n_samples
+		MaxMinClusters(n_clusters=10,n_samples=100,n_dim=0)
+		MaxMinClusters(n_clusters=10,n_samples=9,n_dim=10)
+		MaxMinClusters(n_clusters=0,n_samples=100,n_dim=10)
+		MaxMinClusters(n_clusters=2,n_samples=1,n_dim=10)
+		MaxMinClusters(n_clusters=2,n_samples=1,n_dim=10)
+
+		# maxmin_ratios must be >= 1
+		MaxMinClusters(imbal_maxmin=0.98)
+		MaxMinClusters(imbal_maxmin=-1.1)
+		MaxMinClusters(aspect_maxmin=0.35)
+		MaxMinClusters(aspect_maxmin=-1.5)
+		MaxMinClusters(radius_maxmin=0.21)
+		MaxMinClusters(radius_maxmin=-1)
+		MaxMinClusters(aspect_ref=0.99)
+		MaxMinClusters(aspect_ref=-2)
+
+		# must have alpha_max > 0, alpha_min >= 0, alpha_max > alpha_min
+		MaxMinClusters(alpha_max=0, alpha_min=0)
+		MaxMinClusters(alpha_max=0.05, alpha_min=0.1)
+		MaxMinClusters(alpha_max=0.1, alpha_min=0.0001)
+		MaxMinClusters(alpha_max=0.025, alpha_min=-1.0)
+		MaxMinClusters(alpha_max=-0.5, alpha_min=0.05)
+
+		# packing must be strictly between 0 and 1, scale must be >0
+		MaxMinClusters(packing=0)
+		MaxMinClusters(packing=1)
+		MaxMinClusters(scale=0)
+		MaxMinClusters(scale=-0.5)
+
+		# currently only support dist in {'gaussian','exp','t'}
+		MaxMinClusters(dist='foo')
+		MaxMinClusters(dist='bar')
+
 
 
 
