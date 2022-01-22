@@ -35,10 +35,11 @@ In addition, we set the reference aspect ratio of a cluster to be 2, producing s
 aspect ratio, clusters become more elliptical on average. The parameters alpha_max and alpha_min specify the maximum and minimum allowed overlap between
 clusters (`alpha_max=0.1`, `alpha_min=0.075`). Finally, we choose an exponential distribution for the clusters (`dist='exp'`).
 
-<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_0.png?raw=true" width="300px" align="left">
-<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_1.png?raw=true" width="300px" align="left">
-<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_2.png?raw=true" width="300px" align="left">
-
+<div>
+<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_0.png?raw=true" width="200px">
+<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_1.png?raw=true" width="200px">
+<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_2.png?raw=true" width="200px">
+</div>
 
 
 ### References
