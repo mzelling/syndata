@@ -1,6 +1,12 @@
 SynData - Generate Synthetic Data Sets with Clusters
 ============================================================
 
+<div>
+<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_0.png?raw=true" width="200px">
+<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_1.png?raw=true" width="200px">
+<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_2.png?raw=true" width="200px">
+</div>
+
 SynData is a package for generating synthetic data sets. These data sets are particularly helpful for validating 
 unsupervised cluster analysis techniques. 
 
@@ -29,17 +35,11 @@ X,y = my_clusters.generate_data()
 plt.scatter(X[:,0],X[:,1])
 plt.gca().set_aspect('equal', adjustable='box')
 ```
-The plots below show the result of running the above code snippet three times. In defining the object `my_clusters`, we specify that we would
+The plots at the top show the result of running the above code snippet three times. In defining the object `my_clusters`, we specify that we would
 like to create data sets with three clusters in two dimensions (`n_clusters=3`, `n_dim=2`). Each data set has 300 samples in total (`n_samples=300`). 
 In addition, we set the reference aspect ratio of a cluster to be 2, producing slightly oblong clusters (`aspect_ref=2`). As you increase the reference
 aspect ratio, clusters become more elliptical on average. The parameters alpha_max and alpha_min specify the maximum and minimum allowed overlap between
 clusters (`alpha_max=0.1`, `alpha_min=0.075`). Finally, we choose an exponential distribution for the clusters (`dist='exp'`).
-
-<div>
-<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_0.png?raw=true" width="200px">
-<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_1.png?raw=true" width="200px">
-<img src="https://github.com/mzelling/syndata/blob/main/my_clusters_test_2.png?raw=true" width="200px">
-</div>
 
 
 ### References
